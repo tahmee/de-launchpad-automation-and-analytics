@@ -2,6 +2,10 @@
 import logging
 import requests
 import json
+import os
+
+# Create 'logs' file if not existing
+os.makedirs('logs', exist_ok=True)
 
 # Setup logging config
 logging.basicConfig(
@@ -12,7 +16,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# Assign Zenquotes(quote only) API url to a variable zq_api
+# Assign Zenquotes(quote only) API url to variable zq_api
 zq_api = "https://zenquotes.io/api/quotes/"
 
 # Define function to connect to api and fetch data
@@ -37,7 +41,7 @@ def fetch_api_data(url):
             logger.info("Data successfully retrieved and parsed into JSON")
             return data
         else:
-            logger.error(f"Failed to retrieve data.\nStatus code: {response.status_code}")
+            logger.error(f"Failed to retrieve data. Status code: {response.status_code}")
             logger.error(f"Response content: {response.text}")
             return None
 
@@ -73,7 +77,7 @@ def filter_data(data):
         list[dict]: Filtered quotes with 'author' and 'quote' keys.
 
     """
-    logger.info(f"Starting data filtering.\n{len(data)} records to process")
+    logger.info(f"Starting data filtering. {len(data)} records to process")
     selected_data = []
     skipped_record = 0
     
@@ -97,13 +101,13 @@ def filter_data(data):
             continue  # Skip malformed items, process the rest
         except Exception as e:
             logger.error(f"Unexpected error processing item: {e}")
-    logger.info(f"Successfully filtered {len(selected_data)} records.\nSkipped {skipped_record} records")
+    logger.info(f"Successfully filtered {len(selected_data)} records. Skipped {skipped_record} records")
     return selected_data
 
 # Define function to save filtered data into a .json file
 def save_to_json(data, filename='quote_data.json'):
     """
-     Saves filtered data to a JSON file.
+    Saves filtered data to a JSON file.
     
     Args:
         data (list[dict]): List of quote dictionaries with 'author' and 'quote' keys.
@@ -112,11 +116,11 @@ def save_to_json(data, filename='quote_data.json'):
     Note:
         Overwrites existing files. Logs success/failure.
     """
-    logger.info(f"Attempting to save {data} in {filename}")
+    logger.info(f"Attempting to save data to {filename}")
     try:
         with open(filename, 'w') as file:
             json.dump(data, file, indent=2, ensure_ascii=False)
-            logging.info(f"Filtered data successfully saved to {filename}")
+            logger.info(f"Filtered data successfully saved to {filename}")
     except PermissionError:
         logger.error(f"Permission denied: Cannot write to {filename}")
     except Exception as e:
