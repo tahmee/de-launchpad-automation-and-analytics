@@ -138,3 +138,4 @@ if __name__ == "__main__":
             logger.info("Script executed successfully")
     except Exception as e:
         logger.critical(f"Script failed; Unexpected error: {e}", exc_info=True)
+        
