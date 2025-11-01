@@ -22,7 +22,7 @@ def fetch_api_data(url):
     """
     try:
         logger.info(f"Attempting to fetch data from {url}")
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
         logger.info(f"Response status code: {response.status_code}")
 
         if response.status_code == 200:
@@ -34,6 +34,14 @@ def fetch_api_data(url):
             logger.error(f"Response content: {response.text}")
             return None
 
+    except requests.exceptions.Timeout:
+        logger.error(f"Request timed out for {url}")
+        return None
+    
+    except requests.exceptions.ConnectionError:
+        logger.error(f"A connection error occurred for {url}")
+        return None
+    
     except requests.exceptions.RequestException as e:
         logger.error(f"Request failed: {str(e)}")
         return None
