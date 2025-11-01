@@ -12,14 +12,20 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# Assign Zenquotes(quote only) api url to a variable zq_api
+# Assign Zenquotes(quote only) API url to a variable zq_api
 zq_api = "https://zenquotes.io/api/quotes/"
 
 # Define function to connect to api and fetch data
 def fetch_api_data(url):
-    """This function takes the api url as argument.
-    Connects to the api, fetches the data and parses it to JSON format.
-    Returns an array of dicts(a list of dicts).
+    """Connects to API, fetches and parse JSON data.
+    Args:
+        url (str): The API url to fetch the data from.
+    
+    Returns: 
+        list[dict] | None: A list of dictionaries containing the API data or None if requests fails
+    
+    Raises:
+        Logs errors for connection issues, timeout or parsing failure.
     """
     try:
         logger.info(f"Attempting to fetch data from {url}")
@@ -58,9 +64,15 @@ def fetch_api_data(url):
 
 # Define function to filter data and save only required key-value pairs
 def filter_data(data):
-    """This function takes the parsed api data as argument.
-    Selects required key-value pairs and saves into a new list
-    Returns the new list with selected data"""
+    """Takes parsed JSON data, filters for required key-value pairs and saves into new list.
+    
+    Args:
+        data (list[dict]): API response with 'a' (author) and 'q' (quote) keys.
+    
+    Returns:
+        list[dict]: Filtered quotes with 'author' and 'quote' keys.
+
+    """
     logger.info(f"Starting data filtering.\n{len(data)} records to process")
     selected_data = []
     skipped_record = 0
@@ -90,8 +102,15 @@ def filter_data(data):
 
 # Define function to save filtered data into a .json file
 def save_to_json(data, filename='quote_data.json'):
-    """This function takes filtered data as first argument and stores it in a .json file
-    The second argument has a default parameter 'filename' with a default argument.
+    """
+     Saves filtered data to a JSON file.
+    
+    Args:
+        data (list[dict]): List of quote dictionaries with 'author' and 'quote' keys.
+        filename (str, optional): Output file path. Defaults to 'quote_data.json'.
+    
+    Note:
+        Overwrites existing files. Logs success/failure.
     """
     logger.info(f"Attempting to save {data} in {filename}")
     try:
