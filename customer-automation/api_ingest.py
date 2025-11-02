@@ -3,6 +3,9 @@ import logging
 import requests
 import json
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Create 'logs' file if not existing
 os.makedirs('logs', exist_ok=True)
@@ -17,7 +20,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Assign Zenquotes(quote only) API url to variable zq_api
-zq_api = "https://zenquotes.io/api/quotes/"
+zq_api = os.getenv("API_URL")
 
 # Define function to connect to api and fetch data
 def fetch_api_data(url):
