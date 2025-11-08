@@ -5,22 +5,42 @@ import json
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# Setup log and output file path
+LOG_DIR = "logs"
+LOG_FILE = "api_ingest.log"
+LOG_PATH = os.path.join(LOG_DIR, LOG_FILE)
+OUTPUT_DIR = "api_data"
+OUTPUT_FILE = "quote_data.json"
+OUTPUT_PATH = os.path.join(OUTPUT_DIR, OUTPUT_FILE)
 
-# Create 'logs' file if not existing
-os.makedirs('logs', exist_ok=True)
 
 # Setup logging config
 logging.basicConfig(
-    filename='logs/api_ingest.log',
+    filename=LOG_PATH,
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
-
+# Initialize logging
 logger = logging.getLogger(__name__)
 
-# Assign Zenquotes(quote only) API url to variable zq_api
+# Call load_dotenv
+load_dotenv()
+
+# Assign Zenquotes(quote only) API endpoint to variable zq_api
 zq_api = os.getenv("API_URL")
+
+# Set constant API timeout
+API_TIMEOUT = 10
+
+# Define function to create directories
+def setup_directories():
+    """Create directories if they don't exist."""
+    # Create logs directory
+    os.makedirs(LOG_DIR, exist_ok=True)
+       
+    # Create output directory
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+
 
 # Define function to connect to api and fetch data
 def fetch_api_data(url):
@@ -36,7 +56,7 @@ def fetch_api_data(url):
     """
     try:
         logger.info(f"Attempting to fetch data from {url}")
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, timeout=API_TIMEOUT)
         logger.info(f"Response status code: {response.status_code}")
 
         if response.status_code == 200:
@@ -80,9 +100,13 @@ def filter_data(data):
         list[dict]: Filtered quotes with 'author' and 'quote' keys.
 
     """
+    if not data:
+        logger.warning("No data provided to filter")
+        return None
+    
     logger.info(f"Starting data filtering. {len(data)} records to process")
     selected_data = []
-    skipped_record = 0
+    skipped_records = 0
     
     # Loop through argument(list of dict)
     for item in data:
@@ -100,15 +124,15 @@ def filter_data(data):
 
         except KeyError as e:
             logger.warning(f"Missing expected key in item: {e}. Skipping item.")
-            skipped_record += 1
+            skipped_records += 1
             continue  # Skip malformed items, process the rest
         except Exception as e:
             logger.error(f"Unexpected error processing item: {e}")
-    logger.info(f"Successfully filtered {len(selected_data)} records. Skipped {skipped_record} records")
+    logger.info(f"Successfully filtered {len(selected_data)} records. Skipped {skipped_records} records")
     return selected_data
 
 # Define function to save filtered data into a .json file
-def save_to_json(data, filename='quote_data.json'):
+def save_to_json(data, filename=OUTPUT_PATH):
     """
     Saves filtered data to a JSON file.
     
@@ -126,6 +150,8 @@ def save_to_json(data, filename='quote_data.json'):
             logger.info(f"Filtered data successfully saved to {filename}")
     except PermissionError:
         logger.error(f"Permission denied: Cannot write to {filename}")
+    except OSError as e:
+        logger.error(f"OS error while saving file: {e}")
     except Exception as e:
         logger.error(f"Unexpected error while trying to save to JSON file: {e}", exc_info=True)
 
@@ -133,12 +159,21 @@ def save_to_json(data, filename='quote_data.json'):
 if __name__ == "__main__":
     #Fetch quotes from Zenquotes API, filter to author/quote pairs, and save locally.
     try:
+        setup_directories()
         logger.info("BEGIN------------------------------")
+
         api_data = fetch_api_data(zq_api) 
         if api_data:  # Only proceed if data was successfully fetched
             new_data = filter_data(api_data) 
-            save_to_json(new_data) 
-            logger.info("Script executed successfully")
+            if new_data:
+                save_to_json(new_data) 
+                print(f"Successfully saved {len(new_data)} quotes to {OUTPUT_PATH}")
+                logger.info("Script executed successfully")
+            else:
+                logger.warning("No data to save after filtering")
+        else:
+            logger.error("Failed to fetch data from API")
+
     except Exception as e:
         logger.critical(f"Script failed; Unexpected error: {e}", exc_info=True)
         
