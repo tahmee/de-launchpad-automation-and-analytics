@@ -1,5 +1,10 @@
 import os
+import json
+import logging
+import smtplib
 from sqlalchemy import create_engine, text
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -17,3 +22,4 @@ try:
 
 except Exception as e:
     print(f"Failed to connect: {e}")
+
