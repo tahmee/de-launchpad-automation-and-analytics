@@ -14,6 +14,6 @@ try:
         result = connection.execute(text('SELECT * FROM users'))
         rows = result.fetchall()
         print(f"Connection successful. Found {len(rows)} records.")
-        
+
 except Exception as e:
     print(f"Failed to connect: {e}")
