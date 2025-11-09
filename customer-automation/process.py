@@ -7,7 +7,9 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
 
+# Initialise load_dotenv()
 load_dotenv()
+
 
 # Create database connection
 credentials = os.getenv('DB_CREDENTIALS')
@@ -22,4 +24,12 @@ try:
 
 except Exception as e:
     print(f"Failed to connect: {e}")
+
+# Set smtp credentials
+sender_email=os.getenv('SENDER_EMAIL')
+receiver_email=os.getenv('RECEIVER_EMAIL')
+password=os.getenv('SENDER_PASSWORD')
+server=os.getenv('SMTP_SERVER')
+port=int(os.getenv('SMTP_PORT'))
+
 
