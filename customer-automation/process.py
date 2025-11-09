@@ -2,10 +2,12 @@ import os
 import json
 import logging
 import smtplib
-from sqlalchemy import create_engine, text
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
+
 
 # Initialise load_dotenv()
 load_dotenv()
