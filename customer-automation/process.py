@@ -9,35 +9,54 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
+# --- Configuration & Setup ---
 
 # Initialise load_dotenv()
 load_dotenv()
 
-# Set smtp credentials
-sender_email=os.getenv('SENDER_EMAIL')
-password=os.getenv('SENDER_PASSWORD')
-smtp_server=os.getenv('SMTP_SERVER')
-port=int(os.getenv('SMTP_PORT'))
+# Setup log path and directory
+LOG_DIR = "logs"
+LOG_FILE = "process.log"
+LOG_PATH = os.path.join(LOG_DIR, LOG_FILE)
+os.makedirs(LOG_DIR, exist_ok=True)
+
+#logging config
+logging.basicConfig(
+    filename=LOG_PATH,
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
+# SMTP credentials/ DB config
+SENDER_EMAIL=os.getenv('SENDER_EMAIL')
+SENDER_PASSWORD=os.getenv('SENDER_PASSWORD')
+SMTP_SERVER=os.getenv('SMTP_SERVER')
+SMTP_PORT=int(os.getenv('SMTP_PORT'))
+# Set database credentials and file path
+DB_CREDENTIALS = os.getenv('DB_CREDENTIALS')
+FILE_PATH = os.getenv('FILE_PATH') # Path to quotes file
+
+
 
 
 def database_connection():
-    # Create database connection
-    credentials = os.getenv('DB_CREDENTIALS')
+    """Creates a database connection and fetch records"""
+   
+
+    # Create a session
     engine = create_engine(credentials)
-
-    # Create session
-    Session =sessionmaker(bind=engine)
-    session = Session()
-
+    Session = sessionmaker(bind=engine)
+    
     # Connect to database
     try:    
-        with engine.connect() as connection:
-            result = connection.execute(text('SELECT * FROM users'))
-            rows = result.fetchall()
-            print(f"Connection successful. Found {len(rows)} records.")
+        with Session() as session:
+            result = session.execute(text('SELECT * FROM users'))
+            rows = result.mappings().all()
+            logging.info(f"Database connection successful. Found {len(rows)} records.")
 
     except Exception as e:
-        print(f"Failed to connect: {e}")
+        logging.error(f"Failed to connect: {e}", exc_info=True)
+        raise
 
     query = text("""
         SELECT first_name,
@@ -54,7 +73,7 @@ def database_connection():
 
     return customers
 
-def send_email(user_name, user_email):
+def send_email(user_name, user_email, quote=get_quote):
     # Email settings
     sender_name = "MindFuel"
     subject = "Daily Inspiration from MindFuel"
@@ -193,10 +212,11 @@ def send_email(user_name, user_email):
 
 def get_quote(filename):
     with open(filename, 'r') as file:
-        file.read()
-    return file
+        content = file.read()
 
-file_path =
+    if content
+     
+
 
 users = database_connection()
 success_count = 0
