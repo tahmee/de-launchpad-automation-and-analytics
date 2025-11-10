@@ -167,7 +167,10 @@ def load_cached_quote(filename=OUTPUT_PATH):
 
 
 if __name__ == "__main__":
-    # 
+    """
+    Fetch today's quote from ZenQuotes API and cache
+    - Checks if cached quote is recent otherwise run fetch  
+    """
     try:
         logger.info("=" * 50)
         logger.info("Starting daily quote fetch")
