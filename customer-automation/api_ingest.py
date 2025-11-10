@@ -1,11 +1,11 @@
-# Import required packages
 import logging
 import requests
 import json
 import os
 from dotenv import load_dotenv
+from datetime import datetime
 
-# Setup log and output file path
+# Setup directories
 LOG_DIR = "logs"
 LOG_FILE = "api_ingest.log"
 LOG_PATH = os.path.join(LOG_DIR, LOG_FILE)
@@ -13,33 +13,25 @@ OUTPUT_DIR = "api_data"
 OUTPUT_FILE = "quote_data.json"
 OUTPUT_PATH = os.path.join(OUTPUT_DIR, OUTPUT_FILE)
 
+os.makedirs(LOG_DIR, exist_ok=True)
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# Setup logging config
+# logging config
 logging.basicConfig(
     filename=LOG_PATH,
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
-# Initialize logging
 logger = logging.getLogger(__name__)
 
-# Call load_dotenv
+# load enviroment
 load_dotenv()
 
-# Assign Zenquotes(quote only) API endpoint to variable zq_api
-zq_api = os.getenv("API_URL")
+# Assign ZenQuotes API endpoint to variable zq_api
+zq_today_api = os.getenv("API_URL")
 
 # Set constant API timeout
 API_TIMEOUT = 10
-
-# Define function to create directories
-def setup_directories():
-    """Create directories if they don't exist."""
-    # Create logs directory
-    os.makedirs(LOG_DIR, exist_ok=True)
-       
-    # Create output directory
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
 # Define function to connect to api and fetch data
@@ -62,7 +54,37 @@ def fetch_api_data(url):
         if response.status_code == 200:
             data = response.json()
             logger.info("Data successfully retrieved and parsed into JSON")
-            return data
+            
+            # API returns array wuth single quote
+            if data and len(data) > 0:
+                quote_data = data[0]
+
+                 # Extract values using .get() to handle missing keys gracefully
+                quote = quote_data.get('q')
+                author = quote_data.get('a')
+
+                # Check for missing keys or empty values (malformed data)
+                if not quote or not author:
+                    logger.error(
+                        f"Malformed quote data received. "
+                        f"'q' or 'a' key missing or value is empty. "
+                        f"Keys received: {list(quote_data.keys())}"
+                    )
+                    return None
+                
+                # Data formatting (only if validation passes)
+                formatted_quote = {
+                    'quote': quote,
+                    'author': author,
+                    'date': datetime.now().strftime('%Y-%m-%d'),
+                    'fetched_at': datetime.now().isoformat()
+                }
+
+                logger.info(f"Today's quote: '{formatted_quote['quote'][:50]}...' by {formatted_quote['author']}")
+                return formatted_quote  
+            else:
+                logger.error("Empty response array from API") 
+                
         else:
             logger.error(f"Failed to retrieve data. Status code: {response.status_code}")
             logger.error(f"Response content: {response.text}")
@@ -89,49 +111,7 @@ def fetch_api_data(url):
         return None
 
 
-# Define function to filter data and save only required key-value pairs
-def filter_data(data):
-    """Takes parsed JSON data, filters for required key-value pairs and saves into new list.
-    
-    Args:
-        data (list[dict]): API response with 'a' (author) and 'q' (quote) keys.
-    
-    Returns:
-        list[dict]: Filtered quotes with 'author' and 'quote' keys.
-
-    """
-    if not data:
-        logger.warning("No data provided to filter")
-        return None
-    
-    logger.info(f"Starting data filtering. {len(data)} records to process")
-    selected_data = []
-    skipped_records = 0
-    
-    # Loop through argument(list of dict)
-    for item in data:
-        try:
-            author = item['a']
-            quote = item['q']
-
-            # Create new dictionary to store selected key-value pairs(just author and quote)
-            quote_dict = {
-                'author': author,
-                'quote': quote
-            }
-            # Append new dict to list 'selected_data' defined at top of function
-            selected_data.append(quote_dict)
-
-        except KeyError as e:
-            logger.warning(f"Missing expected key in item: {e}. Skipping item.")
-            skipped_records += 1
-            continue  # Skip malformed items, process the rest
-        except Exception as e:
-            logger.error(f"Unexpected error processing item: {e}")
-    logger.info(f"Successfully filtered {len(selected_data)} records. Skipped {skipped_records} records")
-    return selected_data
-
-# Define function to save filtered data into a .json file
+# Define function to save filtered data into a json file
 def save_to_json(data, filename=OUTPUT_PATH):
     """
     Saves filtered data to a JSON file.
@@ -143,37 +123,76 @@ def save_to_json(data, filename=OUTPUT_PATH):
     Note:
         Overwrites existing files. Logs success/failure.
     """
-    logger.info(f"Attempting to save data to {filename}")
+    logger.info(f"Attempting to save quote to {filename}")
     try:
         with open(filename, 'w') as file:
             json.dump(data, file, indent=2, ensure_ascii=False)
-            logger.info(f"Filtered data successfully saved to {filename}")
+            logger.info(f"Quote successfully saved to {filename}")
+            print(f"Today's quote saved: '{data['quote'][:50]}...'")
     except PermissionError:
         logger.error(f"Permission denied: Cannot write to {filename}")
     except OSError as e:
         logger.error(f"OS error while saving file: {e}")
     except Exception as e:
-        logger.error(f"Unexpected error while trying to save to JSON file: {e}", exc_info=True)
+        logger.error(f"Unexpected error while trying to save to file: {e}", exc_info=True)
+
+
+def load_cached_quote(filename=OUTPUT_PATH):
+    """
+    Load cached quote from file if it exists and is from today
+    
+    Returns:
+        dict or None: Quote data if valid cache exists
+    """
+    try:
+        if not os.path.exists(filename):
+            return None
+            
+        with open(filename, 'r') as file:
+            cached_data = json.load(file)
+        
+        # Check if cache is from today
+        today = datetime.now().strftime('%Y-%m-%d')
+        if cached_data.get('date') == today:
+            logger.info(f"Quote for today ({today}) already cached")
+            return cached_data
+        else:
+            logger.info(f"Cached quote is old (from {cached_data.get('date')}), fetching new one")
+            return None
+            
+    except Exception as e:
+        logger.warning(f"Could not load cached quote: {e}")
+        return None
+
 
 
 if __name__ == "__main__":
-    #Fetch quotes from Zenquotes API, filter to author/quote pairs, and save locally.
+    # 
     try:
-        setup_directories()
-        logger.info("BEGIN------------------------------")
+        logger.info("=" * 50)
+        logger.info("Starting daily quote fetch")
+        logger.info("=" * 50)
 
-        api_data = fetch_api_data(zq_api) 
-        if api_data:  # Only proceed if data was successfully fetched
-            new_data = filter_data(api_data) 
-            if new_data:
-                save_to_json(new_data) 
-                print(f"Successfully saved {len(new_data)} quotes to {OUTPUT_PATH}")
-                logger.info("Script executed successfully")
-            else:
-                logger.warning("No data to save after filtering")
+        # Check if there's today's quote cached
+        cached_quote = load_cached_quote()
+
+        if cached_quote:
+            print(f"Already have today's quote cached")
         else:
-            logger.error("Failed to fetch data from API")
+            api_data = fetch_api_data(zq_today_api) 
+
+            if api_data:  # Only proceed if data was successfully fetched
+                save_to_json(api_data) 
+                logger.info("sucessfully fetched and saved today's quote")
+                print(f"Successfully saved quote to {OUTPUT_PATH}")
+                logger.info("Script executed successfully")
+        
+            else:
+                logger.error("Failed to fetch data from API")
+                raise
 
     except Exception as e:
+        print(f"Critical error. Check logs: {LOG_PATH}")
         logger.critical(f"Script failed; Unexpected error: {e}", exc_info=True)
-        
+        raise
+       
