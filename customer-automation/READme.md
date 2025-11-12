@@ -18,7 +18,7 @@
 This project is a robust Python-based email automation system for MindFuel (a mental health wellness startup). It fetches daily inspirational quotes from [ZenQuotes](https://zenquotes.io/) and delivers them to subscribers gotten from a database via personalised emails. This system supports both daily and weekly subscription frequencies with comprehensive logging, error handling, and batch processing capabilities.
 
 ## Features
-MindFuel is a three-stage automation system designed to:
+**MindFuel** is a three-stage automation system designed to:
 1. **Quote Ingestion** (`api_ingest.py`): Fetch daily inspirational quotes from the [ZenQuotes API](https://docs.zenquotes.io/zenquotes-documentation/) and cache them locally.
   - **The exact API endpoint used is "https://zenquotes.io/api/today/[your_key]"** with key being optional.
 2. **User Retrieval** (`process.py`): Fetch users records from a database based off their subscription frequency (i.e daily/weekly).
