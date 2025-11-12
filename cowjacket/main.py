@@ -13,12 +13,12 @@ load_dotenv()
 
 # Setup log path and directory
 LOG_DIR = "logs"
-LOG_FILE = "process.log"
+LOG_FILE = "main.log"
 LOG_PATH = os.path.join(LOG_DIR, LOG_FILE)
 os.makedirs(LOG_DIR, exist_ok=True)
 
 # Set directory path for tracking processed records
-RECORD_DIR = "record"
+RECORD_DIR = "rprocessed_records"
 RECORD_FILE = "processed_records.pkl"
 RECORD_PATH = os.path.join(RECORD_DIR, RECORD_FILE)
 os.makedirs(RECORD_DIR, exist_ok=True)
