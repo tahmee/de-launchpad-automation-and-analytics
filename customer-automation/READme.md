@@ -25,7 +25,7 @@ MindFuel is a three-stage automation system designed to:
 3. **Email Distribution** (`process.py`): Send personalised emails to subscribers with the day's quote, supporting both daily and weekly delivery schedules.
 
 ## System Architecture Diagram
-<img width="2400" height="1429" alt="ca-img" src="https://github.com/user-attachments/assets/aa0ef0fd-fd04-4034-9512-7dcbda9ad416" />
+<img width="2403" height="1415" alt="ca-img" src="https://github.com/user-attachments/assets/40f9c35c-72cc-490d-b2f3-b0e0351912b4" />
 
 ## Project Structure
 
