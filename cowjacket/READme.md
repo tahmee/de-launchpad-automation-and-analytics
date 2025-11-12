@@ -8,6 +8,8 @@
 - [Project Structure](#project-structure)
 - [Prerequisites](#prerequisites)
 - [Reproducibility Guide](#reproducibility-guide)
+- [Images from Successful Run](#images-from-sucessful-run)
+- [Automated Scheduling](#automated-scheduling)
 - [Logging](#logging)
 - [Error Handling](#error-handling)
 - [Contact](#contact)
@@ -177,6 +179,28 @@ echo "Testing email distribution..."
 python process.py
 ```
 
+## Images From Sucessful Run
+
+## Automated Scheduling
+The scripts are scheduled to run once daily using CRON 
+
+#### Linux/macOS (cron)
+
+Edit your crontab:
+```bash
+crontab -e
+```
+
+Add the following lines:
+```bash
+# Fetch quote at 6:00 AM daily
+0 6 * * * cd /path/to/customer-automation && /path/to/venv/bin/python api_ingest.py >> logs/cron.log 2>&1
+
+# Send emails at 7:00 AM daily
+0 7 * * * cd /path/to/customer-automation && /path/to/venv/bin/python process.py >> logs/cron.log 2>&1
+```
+
+
 ## Logging
 
 ### Log Files
@@ -229,7 +253,6 @@ python process.py
 2025-11-12 07:15:30 - Throughput: 27.64 emails/second
 ```
 
-
 ## Error Handling
 
 ### 1. Retry Mechanism
@@ -242,7 +265,7 @@ The system implements exponential backoff for failed email sends:
 
 ### 2. Alert System
 
-Administrators receive email alerts for:
+Administrator receive email alerts for:
 - Script completion with statistics
 - Critical failures
 - Database connection issues
@@ -250,5 +273,5 @@ Administrators receive email alerts for:
 
 
 ## Contact
-
-For issues, questions, or suggestions:  
+Please reach out to me on LinkedIn for thoughts and/or issues encountered during reproduction of project.
+  
