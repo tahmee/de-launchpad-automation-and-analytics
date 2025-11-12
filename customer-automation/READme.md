@@ -1,4 +1,4 @@
-# MindFuel - Daily Quote Email Automation System
+# MindFuel - Email Automation System
 
 ## Navigation / Quick Access
 
@@ -12,7 +12,6 @@
 - [Automated Scheduling](#automated-scheduling)
 - [Logging](#logging)
 - [Error Handling](#error-handling)
-- [Contact](#contact)
 
 
 ## Overview
