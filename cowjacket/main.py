@@ -7,7 +7,7 @@ import pickle
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-from datetime import datetime, timedelta
+from datetime import datetime
 
 load_dotenv()
 
@@ -100,8 +100,6 @@ def fetch_users_in_batches(batch_size=CHUNK_SIZE):
     if not Session:
         raise Exception("Database session not initialised")
     
-    # Calculate the hours 
-    #time_tracker = (datetime.now() - timedelta(hours=hours)).date()
 
     offset = 0
     total_fetched = 0
