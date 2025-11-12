@@ -178,6 +178,7 @@ python process.py
 ```
 
 ## Images From Sucessful Run
+![img3](https://github.com/user-attachments/assets/2b54e68c-912c-4517-9be2-54bed32b2749)
 
 ## Automated Scheduling
 The scripts are scheduled to run once daily using CRON 
