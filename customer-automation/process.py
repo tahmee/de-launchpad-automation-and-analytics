@@ -58,6 +58,7 @@ MAX_RETRIES = 3
 RETRY_DELAY = 2  # seconds 
 RATE_LIMIT_DELAY = 0.1  # seconds between emails (10 emails/second)
 
+# For user batch processing
 CHUNK_SIZE = 1000
 
 # Create database engine
@@ -73,6 +74,7 @@ except Exception as e:
     engine = None
     Session = None
     raise
+
 
 
 def fetch_users_in_batches(email_frequency, batch_size=CHUNK_SIZE):
@@ -231,6 +233,7 @@ def email_template(recipient_name, quote, author):
     return html_body, text_body
 
 
+
 def send_email_config(user_name, user_email, quote, author, sender_name='MindFuel', subject = "Inspiration from MindFuel", max_retries=MAX_RETRIES):
     """Send email with max retry in place."""
     for attempt in range(1, max_retries + 1):
@@ -279,12 +282,14 @@ def send_email_config(user_name, user_email, quote, author, sender_name='MindFue
     return False
 
 
+
 def get_quote(filename):
     """Load quote from JSON file."""
     with open(filename, 'r', encoding='utf-8') as file:
         quote = json.load(file)
         return quote['quote'], quote['author']
     
+
 
 def process_user_batch(batch, quote, author, stats):
     
@@ -310,6 +315,7 @@ def process_user_batch(batch, quote, author, stats):
         
         # Rate limiting
         time.sleep(RATE_LIMIT_DELAY)   
+
 
 
 def generate_summary(stats, day_name, duration, success=True):
@@ -344,6 +350,7 @@ def generate_summary(stats, day_name, duration, success=True):
     return summary
 
 
+
 def log_final_summary(stats, day_name, duration):
     """Log final summary to file."""
     summary_logger.info("=" * 30)
@@ -364,6 +371,7 @@ def log_final_summary(stats, day_name, duration):
     if duration > 0:
         throughput = stats['emails_sent'] / duration
         summary_logger.info(f"Throughput: {throughput:.2f} emails/second")
+
 
 
 def send_alert_email(summary_text, subject="MindFuel Email Automation Summary"):
@@ -421,6 +429,7 @@ def send_alert_email(summary_text, subject="MindFuel Email Automation Summary"):
     except Exception as e:
         logger.error(f"Failed to send alert email: {e}", exc_info=True)
         return False
+
 
 
 def main():
@@ -502,6 +511,7 @@ def main():
     
     # Return 0 for success, 1 if there were failures
     return 0 if stats['failed'] == 0 else 1
+    
     
 
 if __name__ == "__main__":
