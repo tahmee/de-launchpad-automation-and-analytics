@@ -25,7 +25,7 @@ This project is a robust Python-based email automation system for MindFuel (a me
 3. **Email Distribution** (`process.py`): Send personalised emails to subscribers with the day's quote, supporting both daily and weekly delivery schedules.
 
 ## System Architecture Diagram
-<img width="2400" height="1429" alt="ca-img" src="https://github.com/user-attachments/assets/aa0ef0fd-fd04-4034-9512-7dcbda9ad416" />
+<img width="2403" height="1415" alt="ca-img" src="https://github.com/user-attachments/assets/40f9c35c-72cc-490d-b2f3-b0e0351912b4" />
 
 ## Project Structure
 
@@ -178,6 +178,7 @@ python process.py
 ```
 
 ## Images From Sucessful Run
+<img width="1273" height="1481" alt="img3" src="https://github.com/user-attachments/assets/ecec0bac-73eb-4113-aa23-b04e89748e05" />
 
 ## Automated Scheduling
 The scripts are scheduled to run once daily using CRON 
