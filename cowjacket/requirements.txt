@@ -1,6 +1,17 @@
+certifi==2025.10.5
+charset-normalizer==3.4.4
+defusedxml==0.7.1
 dotenv==0.9.9
 greenlet==3.2.4
+idna==3.11
+jira==3.10.5
+oauthlib==3.3.1
+packaging==25.0
 psycopg2==2.9.11
 python-dotenv==1.2.1
+requests==2.32.5
+requests-oauthlib==2.0.0
+requests-toolbelt==1.0.0
 SQLAlchemy==2.0.44
 typing_extensions==4.15.0
+urllib3==2.5.0
