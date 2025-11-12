@@ -2,6 +2,8 @@ import os
 import requests
 import json
 import logging
+import hashlib
+import pickle
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
@@ -15,6 +17,11 @@ LOG_FILE = "process.log"
 LOG_PATH = os.path.join(LOG_DIR, LOG_FILE)
 os.makedirs(LOG_DIR, exist_ok=True)
 
+# Set directory path for tracking processed records
+RECORD_DIR = "record"
+RECORD_FILE = "processed_records.pkl"
+RECORD_PATH = os.path.join(RECORD_DIR, RECORD_FILE)
+os.makedirs(RECORD_DIR, exist_ok=True)
 
 #logging config
 logging.basicConfig(
@@ -47,6 +54,45 @@ Session = sessionmaker(bind=engine)
 
 CHUNK_SIZE = 1000
 
+# Time window for fetching records (fetch last 24 hours)
+TRACK_HOURS = 24
+
+def generate_hash_record(user):
+    """Generate a unique hasd for each record based on combination of several fields"""
+
+    hash_string = f"{user['newusername']}|{user['emailaddress']}|{user['phonenumber']}|{user['createdat']}|{user['dateneededby']}|{user['telephonelinesandinstallations']}|{user['handsetsandheadsets']}"
+    return hashlib.sha256(hash_string.encode()).hexdigest()
+
+
+def load_processed_records():
+    """
+    Load the set of already processed record hashes from state file.
+    """
+    if os.path.exists(RECORD_PATH):
+        try:
+            with open(RECORD_PATH, 'rb') as file:
+                data = pickle.load(file)
+                logger.info(f"Loaded {len(data['hashes'])} previously processed records.")
+                return data
+        except Exception as e:
+            logger.warning(f"Could not load record file: {e}. Starting fresh.")
+            return {"hashes": set(), "last_run": None}
+    return {"hashes": set(), "last_run": None}
+
+
+def save_processed_records(processed_data):
+    """
+    Save the set of processed record hashes to state file.
+    """
+    try:
+        processed_data["last_run"] = datetime.now().isoformat()
+        with open(RECORD_PATH, 'wb') as file:
+            pickle.dump(processed_data, file)
+        logger.info(f"Saved state with {len(processed_data['hashes'])} processed records")
+    except Exception as e:
+        logger.error(f"Failed to save state file: {e}", exc_info=True)
+
+
 def fetch_users_in_batches(batch_size=CHUNK_SIZE):
     """
     Fetch users in batches from database.
@@ -54,6 +100,9 @@ def fetch_users_in_batches(batch_size=CHUNK_SIZE):
     if not Session:
         raise Exception("Database session not initialised")
     
+    # Calculate the hours 
+    #time_tracker = (datetime.now() - timedelta(hours=hours)).date()
+
     offset = 0
     total_fetched = 0
 
@@ -93,130 +142,199 @@ def fetch_users_in_batches(batch_size=CHUNK_SIZE):
             raise
 
 
-def process_batch(batch):
+def process_batch(batch, processed_records):
+    """Process a batch of users and create Jira tickets for each user.
+        Skips records already processed
+    """
+
+    success = 0
+    failed = 0
+    skipped = 0
+    new_hash = set()
+
     for user in batch:
-        equipment_list = []
-        name = user['newusername']
-        job_title = user['job']
-        phone = user['job']
-        email = user['emailaddress']
-        department = user['departmentname']
-        cost_center = user['costcenter']
-        installation_type = user['telephonelinesandinstallations']
-        equipment = [item.strip() for item in user['handsetsandheadsets'].split(";")]
-        time_usage = user['timeframe']
-        ending_date = user['dateneededby']
-        comments = user['Comments']
+        try:
+            # Generate hash for new record
+            hash_record = generate_hash_record(user)
 
-        # Set condition for users based of time_usage selection
-        if time_usage == "Temporary use (three months or less)":
-            time_usage = ["183"]
-            approx_ending_date = user['approximateendingdate']
-        elif time_usage == "Permanent use":
-            time_usage = ["184"]
+            # Skip if already processed
+            if hash_record in processed_records:
+                logger.debug(f"Skipping already processed record for {user['newusername']}")
+                skipped += 1
+                continue
 
-        # Set condition for users as this is a bullet option(one selection)
-        if installation_type == "New extension including new cabling and socket":
-            installation_type = ["160"]
-        elif installation_type == "New extension to an existing, inactive socket":
-            installation_type = ['161']
-        elif installation_type == "Relocate existing to a new location ":
-            installation_type = ['182']
-        elif installation_type == "Convert existing extension from analogue to digital":
-            installation_type = ['190']
-        elif installation_type == "Relocate an existing extension to an existing inactive, socket":
-            installation_type = ['191']
-        elif installation_type == "Swap of telephone extensions":
-            installation_type = ['192']    
-        else:
-            installation_type = ['0']
+            # Extract user data
+            name = user['newusername']
+            job_title = user['job']
+            phone = user['phonenumber']
+            email = user['emailaddress']
+            department = user['departmentname']
+            cost_center = user['costcenter']
+            installation_type = user['telephonelinesandinstallations']
+            equipment = [item.strip() for item in user['handsetsandheadsets'].split(";")]
+            time_usage_raw = user['timeframe']
+            ending_date = user['dateneededby']
+            comments = user['Comments']
 
-        # Select all applicable option (This field is multiple selection)
-        for i in equipment:
-            if i == "Handset speaker phone":
-                equipment_list.append['164']
-            if i == "Cordless headset":
-                equipment_list.append['165']
-            if i == "Cordless handset":
-                equipment_list.append['166']
-            if i == "Mobile phone":
-                equipment_list.append['167']
-            if i == "Smartphone":
-                equipment_list.append['168']
-            if i == "SIM card only":
-                equipment_list.append['194']
-            if i == "Other...":
-                equipment_list.append['0']
+            # Initialise variables
+            approx_ending_date = None
 
-        
-    # Build ticket issue
-    ticket_issue = {
-        "serviceDeskId": SERVICE_DESK_ID,
-        "requestTypeId": REQUEST_TYPE_ID,
-        "requestFieldValues": {
-            "summary": f"Phone equipment order - {name}",
-            "description": f"Equipment request for {name} in {department}"
-        },
-        "form": {
-            "answers": {
-                # First section of form- Person making the request
-                "199": {"text": name},
-                "200": {"text": job_title},
-                "201": {"text": phone},
-                "202": {"text": email},
-                "203": {"text": department},
-                "204": {"text": cost_center},
-                
-                # Telephone lines and installations
-                "157": {"choices": installation_type},
-                
-                # Handsets and Headsets
-                "159": {"choices": equipment_list},
-                
-                # Time frame
-                "205": {"choices": time_usage},
-                "197": {"date": approx_ending_date},  
-                "206": {"date": ending_date},
-                
-                # Comments
-                "189": {"text": comments}
+            # Set condition for users based of time_usage selection
+            if time_usage_raw == "Temporary use (three months or less)":
+                time_usage = ["183"]
+                approx_ending_date = user['approximateendingdate']
+            elif time_usage_raw == "Permanent use":
+                time_usage = ["184"]
+
+
+         # Process installation type
+            installation_mapping = {
+                "New extension including new cabling and socket": ["160"],
+                "New extension to an existing, inactive socket": ["161"],
+                "Relocate existing to a new location": ["182"],
+                "Convert existing extension from analogue to digital": ["190"],
+                "Relocate an existing extension to an existing inactive, socket": ["191"],
+                "Swap of telephone extensions": ["192"],
+                "Other... (multi-line hunt group setup)": ["0"]
             }
-        }
-    }
+            installation_type_cd = installation_mapping[installation_type]
+            
+            # Process equipment
+            equipment_list = []
+            equipment_mapping = {
+                "Handset speaker phone": "164",
+                "Cordless headset": "165",
+                "Cordless handset": "166",
+                "Mobile phone": "167",
+                "Smartphone": "168",
+                "SIM card only": "194",
+                "Other...": "0"
+            }
+            
+            for item in equipment:
+                if item in equipment_mapping:
+                    equipment_list.append(equipment_mapping[item])
+        
+            # Build ticket issue
+            ticket_issue = {
+                "serviceDeskId": SERVICE_DESK_ID,
+                "requestTypeId": REQUEST_TYPE_ID,
+                "requestFieldValues": {
+                    "summary": f"Phone equipment order - {name}",
+                    "description": f"Equipment request for {name} in {department}"
+                },
+                "form": {
+                    "answers": {
+                        # First section of form- Person making the request
+                        "199": {"text": name},
+                        "200": {"text": job_title},
+                        "201": {"text": phone},
+                        "202": {"text": email},
+                        "203": {"text": department},
+                        "204": {"text": cost_center},
+                        
+                        # Telephone lines and installations
+                        "157": {"choices": installation_type_cd},
+                        
+                        # Handsets and Headsets
+                        "159": {"choices": equipment_list},
+                        
+                        # Time frame
+                        "205": {"choices": time_usage},  
+                        "206": {"date": ending_date},
+                        
+                        # Comments
+                        "189": {"text": comments}
+                    }
+                }
+            }
 
 
-# Submit the request
-# url = f"{JIRA_URL}/rest/servicedeskapi/request"
+            # Add approx_ending_date only if it exists
+            if approx_ending_date:
+                ticket_issue["form"]["answers"]["197"] = {"date": approx_ending_date}
 
-# try:
-#     print("Submitting request...")
-#     response = requests.post(url, auth=auth, headers=headers, data=json.dumps(ticket_issue))
+
+            #Submit the request
+            url = f"{JIRA_URL}/rest/servicedeskapi/request"
+            response = requests.post(
+                url, 
+                auth=auth, 
+                headers=headers, 
+                data=json.dumps(ticket_issue),
+                timeout=30  
+            )
+
+            if response.status_code in [200, 201]:
+                result = response.json()
+                issue_key = result['issueKey']
+                logger.info(f"Sucessfully created ticket {issue_key} for {name}")
+                success += 1
+                # Add record to records processed
+                new_hash.add(hash_record)
+            else:
+                logger.error(f"Failed to create ticket for {name}: Status {response.status_code} - {response.text}")
+                failed += 1
+
+        except KeyError as e:
+            # Handle missing fields
+            logger.error(f"Missing required field for user {e}", exc_info=True)
+            failed += 1
+        
+        except requests.exceptions.RequestException as e:
+            # Handle API request errors
+            logger.error(f"API request failed for {user['newusername']}: {e}", exc_info=True)
+            failed += 1
+            
+        except Exception as e:
+            # Handle any other errors
+            logger.error(f"Unexpected error processing user {user['newusername']}: {e}", exc_info=True)
+            failed += 1
+
+    logger.info(f"Batch complete: {success} successful, {failed} failed")
+    return success, failed, skipped, new_hash   
+
+
+def main():
+    """Main execution function."""
+    logger.info("=" * 30)
+    logger.info("STARTING JIRA TICKET CREATION PROCESS")
+    logger.info("=" * 30)
     
-#     print(f"Status Code: {response.status_code}")
-    
-#     if response.status_code in [200, 201]:
-#         result = response.json()
-#         print(f"REQUEST CREATED SUCCESSFULLY!")
-#         print("=" * 80)
-#         print(f"Issue Key: {result.get('issueKey')}")
-#         print(f"Issue ID: {result.get('issueId')}")
-#         print(f"View your request at:")
-#         print(f"{JIRA_URL}/browse/{result.get('issueKey')}")
-#     else:
-#         print(f" ERROR CREATING REQUEST")
-#         print("=" * 80)
-#         print(f"Status Code: {response.status_code}")
-#         print(f"Response: {response.text}")
-    
-# except requests.exceptions.RequestException as e:
-#     print(f"REQUEST FAILED")
-#     print("=" * 80)
-#     print(f"Error: {e}")
-#     if 'response' in locals():
-#         print(f"\nResponse text: {response.text}")
-# except Exception as e:
-#     print(f"UNEXPECTED ERROR")
-#     print("=" * 80)
-#     print(f"Error: {e}")
+    # Load previously processed records
+    records = load_processed_records()
+    processed_hash = records['hashes']
 
+    if records['last_run']:
+        logger.info(f"Last successful run: {records['last_run']}")
 
+    total_success = 0
+    total_failed = 0
+    total_skipped = 0
+    new_hashs = set()
+    
+    try:
+        for batch in fetch_users_in_batches():
+            success, failed, skipped, new_hash = process_batch(batch, processed_hash)
+            total_success += success
+            total_failed += failed
+            total_skipped += skipped
+            new_hashs.update(new_hash)
+
+            # Update file with newly processed records
+            records['hashes'].update(new_hashs)
+            save_processed_records(records)
+
+        logger.info("=" * 10)
+        logger.info(f"Process complete!")
+        logger.info(f"Total successful: {total_success}")
+        logger.info(f"Total failed: {total_failed}")
+        logger.info(f"Total skipped: {total_skipped}")
+        logger.info(f"New records processed: {len(new_hashs)}")
+        
+    except Exception as e:
+        logger.error(f"Fatal error in main process: {e}", exc_info=True)
+        raise
+
+if __name__ == "__main__":
+    main()
