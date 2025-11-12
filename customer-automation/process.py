@@ -40,18 +40,18 @@ summary_logger.addHandler(summary_handler)
 summary_logger.propagate = False 
 
 # SMTP credentials/ DB config
-SENDER_EMAIL=os.getenv('SENDER_EMAIL')
-SENDER_PASSWORD=os.getenv('SENDER_PASSWORD')
-SMTP_SERVER=os.getenv('SMTP_SERVER')
-SMTP_PORT=int(os.getenv('SMTP_PORT'))
-SMTP_TIMEOUT=int(os.getenv('SMTP_TIMEOUT'))
+SENDER_EMAIL = os.getenv('SENDER_EMAIL')
+SENDER_PASSWORD = os.getenv('SENDER_PASSWORD')
+SMTP_SERVER = os.getenv('SMTP_SERVER')
+SMTP_PORT = int(os.getenv('SMTP_PORT'))
+SMTP_TIMEOUT = int(os.getenv('SMTP_TIMEOUT'))
 # Set database credentials and file path
-DB_CREDENTIALS=os.getenv('DB_CREDENTIALS')
-FILE_PATH=os.getenv('FILE_PATH') # Path to quotes file
+DB_CREDENTIALS = os.getenv('DB_CREDENTIALS')
+FILE_PATH = os.getenv('FILE_PATH') # Path to quotes file
 
 # Alert email configuration
-ALERT_EMAIL=os.getenv('ALERT_EMAIL') 
-SEND_ALERTS=os.getenv('SEND_ALERTS').lower() == 'true'
+ALERT_EMAIL = os.getenv('ALERT_EMAIL') 
+SEND_ALERTS = os.getenv('SEND_ALERTS').lower() == 'true'
 
 # Email configuration
 MAX_RETRIES = 3
@@ -88,7 +88,6 @@ def fetch_users_in_batches(email_frequency, batch_size=CHUNK_SIZE):
     while True:
         try:
             with Session() as session:
-                logger.info(f"Database connection successful.")
                 query = text("""
                     SELECT first_name, email_address
                     FROM users
@@ -252,7 +251,7 @@ def send_email_config(user_name, user_email, quote, author, sender_name='MindFue
             msg_alternative.attach(MIMEText(html_body, 'html'))
 
             # Send email
-            with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=SMTP_TIMEOUT) as server:
                 server.starttls()
                 server.login(SENDER_EMAIL, SENDER_PASSWORD)
                 server.send_message(message)
@@ -320,7 +319,7 @@ def generate_summary(stats, day_name, duration, success=True):
     
     summary = f"""
         MindFuel Email Automation Report
-        {'-'*20}
+        {'=' * 30}
         Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
         Day: {day_name}
         Status: {'SUCCESS' if success else 'FAILED'}
@@ -365,12 +364,14 @@ def log_final_summary(stats, day_name, duration):
     if duration > 0:
         throughput = stats['emails_sent'] / duration
         summary_logger.info(f"Throughput: {throughput:.2f} emails/second")
-    
-    summary_logger.info("=" * 30)
 
 
 def send_alert_email(summary_text, subject="MindFuel Email Automation Summary"):
     """Send alert email with statistics summary to admin."""
+    if not SEND_ALERTS:
+        logger.info("Alert emails disabled (SEND_ALERTS=false)")
+        return False
+        
     if not ALERT_EMAIL:
         logger.warning("ALERT_EMAIL not configured, skipping alert email")
         return False
@@ -432,8 +433,6 @@ def main():
     if not all([SENDER_EMAIL, SENDER_PASSWORD, SMTP_SERVER, SMTP_PORT]):
         logger.error("Missing required email configuration")
         return 1
-    else:
-        logger.info("Connection to SMTP server sucessful.")
     
     if not DB_CREDENTIALS:
         logger.error("DB_CREDENTIALS not set")
@@ -495,8 +494,7 @@ def main():
     
     
     # Log final summary
-    summary_text = log_final_summary(stats, day_name, duration)
-    summary_logger.info(summary_text)
+    log_final_summary(stats, day_name, duration)
 
     # Send alert email with summary
     summary = generate_summary(stats, day_name, duration, success=True)
@@ -504,8 +502,6 @@ def main():
     
     # Return 0 for success, 1 if there were failures
     return 0 if stats['failed'] == 0 else 1
-
-
     
 
 if __name__ == "__main__":
