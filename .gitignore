@@ -1,3 +1,7 @@
+api_data/
+processed_records/
+form_request.json
+get_form_rt.py
 test*.txt
 jira_form_test.py
 Task*
