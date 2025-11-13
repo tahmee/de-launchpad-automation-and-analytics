@@ -10,7 +10,7 @@ An automated Python-based system that bridges the gap between customer-facing we
 - [Project Structure](#project-structure)
 - [Tools Used](#tools-used)
 - [Project Workflow](#project-workflow)
-- 
+- [Images after Successful Run](#images)
 - [Key Takeaways](#key-takeaways)
 
 
@@ -40,6 +40,7 @@ Automate the creation of Jira Service Management tickets from web form submissio
 5. **Prevent Duplicates** - Implement hash-based tracking to avoid creating duplicate tickets
 
 ## System Architecture Diagram
+<img width="1711" height="1271" alt="img2" src="https://github.com/user-attachments/assets/7fded57e-cf4c-43ae-ba68-26c639255939" />
 
 ## Project Structure
 
@@ -149,9 +150,14 @@ The script `main.py` is scheduled to run every 15minutes form 7am - 5pm Monday-F
 # Edit crontab
 crontab -e
 
-# Add this line to run every 15 minutes from 7 AM to 5 PM, Monday-Friday
+# Add this line to run every 15 minutes from 7 AM to 5 PM, Daily
 */15 7-17 * * * cd /path/to/cowjacket && ./venv/bin/python main.py >> logs/main.log 2>&1
 ```
+
+## Images
+<img width="942" height="707" alt="Screenshot 2025-11-13 at 8 09 06 AM" src="https://github.com/user-attachments/assets/10ac3db8-0555-4eba-940b-0bfad738e6eb" />
+<img width="1418" height="791" alt="Screenshot 2025-11-12 at 10 45 03 PM" src="https://github.com/user-attachments/assets/0a1aac71-d7d7-4698-88c7-2b7b13dc1ced" />
+<img width="1420" height="795" alt="Screenshot 2025-11-13 at 4 02 34 PM" src="https://github.com/user-attachments/assets/71474bb1-52db-43fb-9acd-368faa0d7983" />
 
 
 ## Key Takeaways
