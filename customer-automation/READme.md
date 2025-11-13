@@ -9,19 +9,18 @@
 - [Prerequisites](#prerequisites)
 - [Project Workflow](#project-workflow)
 - [Reproducibility Guide](#reproducibility-guide)
-- [Automated Scheduling](#automated-scheduling)
 - [Images from Successful Run](#images-from-sucessful-run)
 - [Logging](#logging)
 - [Error Handling](#error-handling)
 
 
 ## Overview
-This project is a robust Python-based email automation system for MindFuel (a mental health wellness startup). It fetches daily inspirational quotes from [ZenQuotes](https://zenquotes.io/) and delivers them to subscribers gotten from a database via personalised emails. This system supports both daily and weekly subscription frequencies with comprehensive logging, error handling, and batch processing capabilities.
+This project is a robust Python-based email automation system for MindFuel (a mental health wellness startup). It fetches inspirational quotes from [ZenQuotes](https://zenquotes.io/) and delivers them to subscribers retrieved from a database via personalised emails. This system supports both daily and weekly subscription frequencies with comprehensive logging, error handling, and batch processing capabilities.
 
 ## Features
 **MindFuel** is a three-stage automation system designed to:
 1. **Quote Ingestion** (`api_ingest.py`): Fetch daily inspirational quotes from the [ZenQuotes API](https://docs.zenquotes.io/zenquotes-documentation/) and cache them locally.
-  - **The exact API endpoint used is "https://zenquotes.io/api/today/[your_key]"** with key being optional.
+  - **The exact API endpoint used is `https://zenquotes.io/api/today/[your_key]`** with key being optional.
 2. **User Retrieval** (`process.py`): Fetch users records from a database based off their subscription frequency (i.e daily/weekly).
 3. **Email Distribution** (`process.py`): Send personalised emails to subscribers with the day's quote, supporting both daily and weekly delivery schedules.
 
@@ -58,6 +57,20 @@ customer-automation/
 - Internet connection for API access
 
 ## Project Workflow
+
+### Quote Ingestion (API)
+- Connect to ZenQuotes Api using the today API endpoint, fetch the daily quote and saves into a local JSON file (`quote_data.json`)
+  - A mechanism is in place to ensure a new api connection is not made (based off the timezone used for quotes being refreshed at the API endpoint) and to rely on the cached quote. This mechanism is in place to accomodate different timezone (for this implementation the `process.py` file will have to be modified.)
+
+### ETL process (Email Delivery)
+- When the `process.py` script is run:
+  - A connection to the database is made and subscribers are retrieved based off conditions on (i.e daily/weekly where weekly is scheduled to receive quote only on mondays)
+  - The local JSON file is opened and the quote is retrieved.
+  - Using the email template setup, dynamic field like subscriber name and quote are filled based off data retrieved. This is to ensure emails are personalised per subscriber.
+  - Connecting to the SMTP server emails are then delivered.
+
+### Automation (Cron)
+- Configured a cron job to run `api_ingest.py` daily at 6:00am and `process.py` daily at 7:00am.
 
 ## Reproducibility Guide
 
@@ -156,7 +169,7 @@ SEND_ALERTS=true
  **Important**: Update the `.env` file with your actual credentials.
 
 
-#### 4. Directory Structure Creation
+### Directory Structure Creation
 
 The scripts will automatically create necessary directories, but you can also create them manually:
 
@@ -164,7 +177,7 @@ The scripts will automatically create necessary directories, but you can also cr
 mkdir -p logs api_data
 ```
 
-#### 7. Test Run
+### Test Run
 
 ```bash
 # Test quote ingestion
@@ -179,7 +192,7 @@ echo "Testing email distribution..."
 python process.py
 ```
 
-## Automated Scheduling
+### Automated Scheduling
 The scripts are scheduled to run once daily using CRON 
 
 #### Linux/macOS (cron)
