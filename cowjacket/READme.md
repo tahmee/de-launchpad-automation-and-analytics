@@ -10,6 +10,7 @@ An automated Python-based system that bridges the gap between customer-facing we
 - [Project Structure](#project-structure)
 - [Tools Used](#tools-used)
 - [Project Workflow](#project-workflow)
+- [Images after a succesful run](#images)
 - [Key Takeaways](#key-takeaways)
 
 
@@ -39,6 +40,7 @@ Automate the creation of Jira Service Management tickets from web form submissio
 5. **Prevent Duplicates** - Implement hash-based tracking to avoid creating duplicate tickets
 
 ## System Architecture Diagram
+<img width="1711" height="1271" alt="img2" src="https://github.com/user-attachments/assets/c366d2cf-e5ed-47da-a764-36e31680f420" />
 
 ## Project Structure
 
@@ -150,6 +152,12 @@ crontab -e
 # Add this line to run every 15 minutes from 7 AM to 5 PM, Monday-Friday
 */15 7-17 * * 1-5 cd /path/to/cowjacket && ./venv/bin/python main.py >> logs/main.log 2>&1
 ```
+
+## Images
+<img width="942" height="707" alt="Screenshot 2025-11-13 at 8 09 06 AM" src="https://github.com/user-attachments/assets/15d08f15-c920-4e54-99e4-f5888b131b15" />
+<img width="1418" height="791" alt="Screenshot 2025-11-12 at 10 45 03 PM" src="https://github.com/user-attachments/assets/3fff45e4-f056-44d8-af7a-86ffa3b0d992" />
+<img width="1420" height="795" alt="Screenshot 2025-11-13 at 4 02 34 PM" src="https://github.com/user-attachments/assets/c56af9ee-6c00-438c-b03f-ee9d49ced009" />
+
 
 ## Key Takeaways
 
