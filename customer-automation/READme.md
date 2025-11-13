@@ -292,5 +292,5 @@ Administrator receive email alerts for:
 
 
 ## Contact
-Please reach out to me on LinkedIn for thoughts and/or issues encountered during reproduction of project.
+For suggestions/ideas on improvement for this project or issues encountered during reproduction of this project please reach out to me on [LinkedIn](https://www.linkedin.com/in/susanamgbare/). I look forward to connecting, and having a chat.
   
