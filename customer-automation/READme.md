@@ -10,7 +10,7 @@
 - [Project Workflow](#project-workflow)
 - [Reproducibility Guide](#reproducibility-guide)
 - [Automated Scheduling](#automated-scheduling)
-- [Image from Successful Run](#image-from-sucessful-run)
+- [Images from Successful Run](#images-from-sucessful-run)
 - [Logging](#logging)
 - [Error Handling](#error-handling)
 
@@ -198,8 +198,13 @@ Add the following lines:
 0 7 * * * cd /path/to/customer-automation && /path/to/venv/bin/python process.py >> logs/cron.log 2>&1
 ```
 
-## Image From Sucessful Run
+## Images From Sucessful Run
 <img width="1273" height="1481" alt="img3" src="https://github.com/user-attachments/assets/ecec0bac-73eb-4113-aa23-b04e89748e05" />
+<img width="1153" height="488" alt="Screenshot 2025-11-13 at 8 46 48 AM" src="https://github.com/user-attachments/assets/173150cc-4a09-4f46-b10f-fe9814afb9d9" />
+<img width="1280" height="633" alt="PHOTO-2025-11-13-08-52-33" src="https://github.com/user-attachments/assets/ce0a8ae9-204d-40a8-a610-796fa3e48a02" />
+<img width="796" height="1280" alt="PHOTO-2025-11-13-08-55-41" src="https://github.com/user-attachments/assets/d29bddea-bb60-4bce-a84c-ae2513de501a" />
+
+
 
 ## Logging
 
