@@ -7,9 +7,10 @@
 - [System Architecture Diagram](#system-architecture-diagram)
 - [Project Structure](#project-structure)
 - [Prerequisites](#prerequisites)
+- [Project Workflow](#project-workflow)
 - [Reproducibility Guide](#reproducibility-guide)
-- [Images from Successful Run](#images-from-sucessful-run)
 - [Automated Scheduling](#automated-scheduling)
+- [Image from Successful Run](#image-from-sucessful-run)
 - [Logging](#logging)
 - [Error Handling](#error-handling)
 
@@ -25,7 +26,7 @@ This project is a robust Python-based email automation system for MindFuel (a me
 3. **Email Distribution** (`process.py`): Send personalised emails to subscribers with the day's quote, supporting both daily and weekly delivery schedules.
 
 ## System Architecture Diagram
-<img width="2403" height="1415" alt="ca-img" src="https://github.com/user-attachments/assets/40f9c35c-72cc-490d-b2f3-b0e0351912b4" />
+<img width="2387" height="1555" alt="img1" src="https://github.com/user-attachments/assets/3f4d1cba-387d-429e-b7e3-e0a9c5205b54" />
 
 ## Project Structure
 
@@ -56,6 +57,7 @@ customer-automation/
 - SMTP server access (e.g., Gmail)
 - Internet connection for API access
 
+## Project Workflow
 
 ## Reproducibility Guide
 
@@ -177,9 +179,6 @@ echo "Testing email distribution..."
 python process.py
 ```
 
-## Images From Sucessful Run
-<img width="1273" height="1481" alt="img3" src="https://github.com/user-attachments/assets/ecec0bac-73eb-4113-aa23-b04e89748e05" />
-
 ## Automated Scheduling
 The scripts are scheduled to run once daily using CRON 
 
@@ -199,6 +198,8 @@ Add the following lines:
 0 7 * * * cd /path/to/customer-automation && /path/to/venv/bin/python process.py >> logs/cron.log 2>&1
 ```
 
+## Image From Sucessful Run
+<img width="1273" height="1481" alt="img3" src="https://github.com/user-attachments/assets/ecec0bac-73eb-4113-aa23-b04e89748e05" />
 
 ## Logging
 
