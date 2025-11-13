@@ -18,7 +18,7 @@ LOG_PATH = os.path.join(LOG_DIR, LOG_FILE)
 os.makedirs(LOG_DIR, exist_ok=True)
 
 # Set directory path for tracking processed records
-RECORD_DIR = "rprocessed_records"
+RECORD_DIR = "processed_records"
 RECORD_FILE = "processed_records.pkl"
 RECORD_PATH = os.path.join(RECORD_DIR, RECORD_FILE)
 os.makedirs(RECORD_DIR, exist_ok=True)
@@ -110,6 +110,7 @@ def fetch_users_in_batches(batch_size=CHUNK_SIZE):
                 query = text("""
                     SELECT *
                     FROM phonerequest
+                    ORDER BY createdat, emailaddress
                     LIMIT :limit OFFSET :offset;
                 """)
                 
@@ -140,7 +141,7 @@ def fetch_users_in_batches(batch_size=CHUNK_SIZE):
             raise
 
 
-def process_batch(batch, processed_records):
+def process_batch(batch, processed_records, new_hash):
     """Process a batch of users and create Jira tickets for each user.
         Skips records already processed
     """
@@ -148,7 +149,7 @@ def process_batch(batch, processed_records):
     success = 0
     failed = 0
     skipped = 0
-    new_hash = set()
+    batch_new_hash = set()
 
     for user in batch:
         try:
@@ -156,7 +157,7 @@ def process_batch(batch, processed_records):
             hash_record = generate_hash_record(user)
 
             # Skip if already processed
-            if hash_record in processed_records:
+            if hash_record in processed_records or hash_record in new_hash:
                 logger.debug(f"Skipping already processed record for {user['newusername']}")
                 skipped += 1
                 continue
@@ -269,6 +270,7 @@ def process_batch(batch, processed_records):
                 logger.info(f"Sucessfully created ticket {issue_key} for {name}")
                 success += 1
                 # Add record to records processed
+                batch_new_hash.add(hash_record)
                 new_hash.add(hash_record)
             else:
                 logger.error(f"Failed to create ticket for {name}: Status {response.status_code} - {response.text}")
@@ -290,7 +292,7 @@ def process_batch(batch, processed_records):
             failed += 1
 
     logger.info(f"Batch complete: {success} successful, {failed} failed")
-    return success, failed, skipped, new_hash   
+    return success, failed, skipped, batch_new_hash   
 
 
 def main():
@@ -313,14 +315,14 @@ def main():
     
     try:
         for batch in fetch_users_in_batches():
-            success, failed, skipped, new_hash = process_batch(batch, processed_hash)
+            success, failed, skipped, batch_new_hash = process_batch(batch, processed_hash, new_hashs)
             total_success += success
             total_failed += failed
             total_skipped += skipped
-            new_hashs.update(new_hash)
+            new_hashs.update(batch_new_hash)
 
             # Update file with newly processed records
-            records['hashes'].update(new_hashs)
+            records['hashes'].update(batch_new_hash)
             save_processed_records(records)
 
         logger.info("=" * 10)
